@@ -24,6 +24,10 @@ export default function RootLayout({
           <input type="email" name="email" />
           <input type="text" name="subject" />
           <textarea name="message"></textarea>
+          <input type="text" name="timestamp" />
+          <input type="text" name="user_ip" />
+          <input type="text" name="user_agent" />
+          <input type="text" name="page_url" />
         </form>
       </body>
     </html>

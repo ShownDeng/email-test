@@ -241,36 +241,54 @@ export default function SatelliteOrbit() {
   useEffect(() => {
     const getUserIP = async () => {
       try {
-        // 使用多个IP服务作为备选
+        // 使用更可靠的IP服务
         const ipServices = [
-          'https://api.ipify.org?format=json',
-          'https://ipapi.co/json/',
-          'https://ip.42.pl/raw'
+          { url: 'https://api.ipify.org?format=json', type: 'json', key: 'ip' },
+          { url: 'https://ipapi.co/json/', type: 'json', key: 'ip' },
+          { url: 'https://api.ip.sb/ip', type: 'text' },
+          { url: 'https://ifconfig.me/ip', type: 'text' },
+          { url: 'https://icanhazip.com', type: 'text' }
         ]
         
         for (const service of ipServices) {
           try {
-            const response = await fetch(service)
-            if (service.includes('ipify')) {
-              const data = await response.json()
-              setUserIP(data.ip)
-              break
-            } else if (service.includes('ipapi')) {
-              const data = await response.json()
-              setUserIP(data.ip)
-              break
-            } else {
-              const ip = await response.text()
-              setUserIP(ip.trim())
-              break
+            console.log(`尝试获取IP from: ${service.url}`)
+            const response = await fetch(service.url, {
+              method: 'GET',
+              mode: 'cors',
+              cache: 'no-cache'
+            })
+            
+            if (response.ok) {
+              if (service.type === 'json') {
+                const data = await response.json()
+                const ip = data[service.key!]
+                if (ip) {
+                  console.log(`成功获取IP: ${ip}`)
+                  setUserIP(ip)
+                  return
+                }
+              } else {
+                const ip = (await response.text()).trim()
+                if (ip && /^\d+\.\d+\.\d+\.\d+$/.test(ip)) {
+                  console.log(`成功获取IP: ${ip}`)
+                  setUserIP(ip)
+                  return
+                }
+              }
             }
           } catch (err) {
-            continue // 尝试下一个服务
+            console.log(`${service.url} 失败:`, err)
+            continue
           }
         }
+        
+        // 如果所有服务都失败，设置一个标记
+        console.log('所有IP服务都失败，使用客户端检测')
+        setUserIP('客户端检测失败')
       } catch (error) {
-        console.log('无法获取IP地址:', error)
-        // IP获取失败不影响表单功能
+        console.log('IP获取过程出错:', error)
+        setUserIP('获取失败')
       }
     }
     
@@ -291,7 +309,7 @@ export default function SatelliteOrbit() {
     setSubmitStatus('idle')
 
     try {
-      // 获取时间戳和其他信息
+      // 获取时间戳和浏览器信息
       const timestamp = new Date().toLocaleString('zh-CN', {
         timeZone: 'Asia/Shanghai',
         year: 'numeric',
@@ -302,13 +320,44 @@ export default function SatelliteOrbit() {
         second: '2-digit'
       })
 
+      const userAgent = navigator.userAgent
+      const currentIP = userIP || '正在获取...'
+
+      // 创建增强的消息内容
+      const enhancedMessage = `${emailForm.message}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 提交信息记录
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🕐 提交时间: ${timestamp}
+🌐 用户IP: ${currentIP}
+💻 浏览器: ${userAgent}
+📄 来源页面: ${window.location.href}
+🔍 屏幕分辨率: ${window.screen.width}x${window.screen.height}
+🌍 时区: ${Intl.DateTimeFormat().resolvedOptions().timeZone}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
+
       // 根据Netlify官方文档的要求提交表单
       const formData = new FormData()
       formData.append('form-name', 'contact')
       formData.append('name', emailForm.name)
       formData.append('email', emailForm.email)
       formData.append('subject', emailForm.subject)
-      formData.append('message', `${emailForm.message}\n\n---\n提交信息:\n时间: ${timestamp}\n用户IP: ${userIP || '未获取到'}\n浏览器: ${navigator.userAgent}`)
+      formData.append('message', enhancedMessage)
+      
+      // 添加隐藏字段来传递额外信息
+      formData.append('timestamp', timestamp)
+      formData.append('user_ip', currentIP)
+      formData.append('user_agent', userAgent)
+      formData.append('page_url', window.location.href)
+
+      console.log('提交的表单数据:', {
+        name: emailForm.name,
+        email: emailForm.email,
+        subject: emailForm.subject,
+        ip: currentIP,
+        timestamp: timestamp
+      })
 
       const response = await fetch('/', {
         method: 'POST',
@@ -499,6 +548,14 @@ export default function SatelliteOrbit() {
                 >
                   {isSubmitting ? '发送中...' : '发送邮件'}
                 </Button>
+              </div>
+
+              {/* 显示检测到的信息 */}
+              <div className="text-xs text-gray-500 pt-2 border-t border-gray-600">
+                <p>检测信息: IP {userIP || '获取中...'}</p>
+                <p className="text-gray-600">
+                  提交时将自动记录访问信息用于安全分析
+                </p>
               </div>
             </form>
           </DialogContent>
