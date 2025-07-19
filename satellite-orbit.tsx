@@ -551,12 +551,7 @@ export default function SatelliteOrbit() {
               </div>
 
               {/* 显示检测到的信息 */}
-              <div className="text-xs text-gray-500 pt-2 border-t border-gray-600">
-                <p>检测信息: IP {userIP || '获取中...'}</p>
-                <p className="text-gray-600">
-                  提交时将自动记录访问信息用于安全分析
-                </p>
-              </div>
+              
             </form>
           </DialogContent>
         </Dialog>
