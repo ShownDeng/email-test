@@ -250,7 +250,7 @@ export default function SatelliteOrbit() {
     setSubmitStatus('idle')
 
     try {
-      // 直接提交到Netlify Forms
+      // 根据Netlify官方文档的要求提交表单
       const formData = new FormData()
       formData.append('form-name', 'contact')
       formData.append('name', emailForm.name)
@@ -260,7 +260,10 @@ export default function SatelliteOrbit() {
 
       const response = await fetch('/', {
         method: 'POST',
-        body: formData
+        headers: { 
+          'Content-Type': 'application/x-www-form-urlencoded' 
+        },
+        body: new URLSearchParams(formData as any).toString()
       })
 
       if (response.ok) {
@@ -358,6 +361,9 @@ export default function SatelliteOrbit() {
             </DialogHeader>
             
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* 隐藏字段：Netlify表单必需 */}
+              <input type="hidden" name="form-name" value="contact" />
+              
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-gray-300">姓名</Label>

@@ -16,8 +16,10 @@ export default function RootLayout({
     <html lang="zh-CN">
       <body>
         {children}
-        {/* 隐藏的Netlify表单 */}
+        {/* 隐藏的Netlify表单 - 根据官方文档要求 */}
         <form name="contact" data-netlify="true" data-netlify-honeypot="bot-field" hidden>
+          <input type="hidden" name="form-name" value="contact" />
+          <input type="text" name="bot-field" />
           <input type="text" name="name" />
           <input type="email" name="email" />
           <input type="text" name="subject" />
