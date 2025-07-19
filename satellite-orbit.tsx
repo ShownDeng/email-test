@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
 import { OrbitControls, Stars, Html } from "@react-three/drei"
 import type * as THREE from "three"
@@ -235,6 +235,47 @@ export default function SatelliteOrbit() {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [userIP, setUserIP] = useState<string>('')
+
+  // 获取用户IP地址
+  useEffect(() => {
+    const getUserIP = async () => {
+      try {
+        // 使用多个IP服务作为备选
+        const ipServices = [
+          'https://api.ipify.org?format=json',
+          'https://ipapi.co/json/',
+          'https://ip.42.pl/raw'
+        ]
+        
+        for (const service of ipServices) {
+          try {
+            const response = await fetch(service)
+            if (service.includes('ipify')) {
+              const data = await response.json()
+              setUserIP(data.ip)
+              break
+            } else if (service.includes('ipapi')) {
+              const data = await response.json()
+              setUserIP(data.ip)
+              break
+            } else {
+              const ip = await response.text()
+              setUserIP(ip.trim())
+              break
+            }
+          } catch (err) {
+            continue // 尝试下一个服务
+          }
+        }
+      } catch (error) {
+        console.log('无法获取IP地址:', error)
+        // IP获取失败不影响表单功能
+      }
+    }
+    
+    getUserIP()
+  }, [])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -250,13 +291,24 @@ export default function SatelliteOrbit() {
     setSubmitStatus('idle')
 
     try {
+      // 获取时间戳和其他信息
+      const timestamp = new Date().toLocaleString('zh-CN', {
+        timeZone: 'Asia/Shanghai',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      })
+
       // 根据Netlify官方文档的要求提交表单
       const formData = new FormData()
       formData.append('form-name', 'contact')
       formData.append('name', emailForm.name)
       formData.append('email', emailForm.email)
       formData.append('subject', emailForm.subject)
-      formData.append('message', emailForm.message)
+      formData.append('message', `${emailForm.message}\n\n---\n提交信息:\n时间: ${timestamp}\n用户IP: ${userIP || '未获取到'}\n浏览器: ${navigator.userAgent}`)
 
       const response = await fetch('/', {
         method: 'POST',
