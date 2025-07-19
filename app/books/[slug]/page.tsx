@@ -10,6 +10,30 @@ interface BookReviewPageProps {
   }
 }
 
+// 生成静态参数 - 这是修复构建错误的关键
+export function generateStaticParams() {
+  return books.map((book) => ({
+    slug: book.slug,
+  }))
+}
+
+// 生成元数据
+export function generateMetadata({ params }: BookReviewPageProps) {
+  const book = books.find((b) => b.slug === params.slug)
+  
+  if (!book) {
+    return {
+      title: '书籍未找到',
+      description: '请求的书籍不存在'
+    }
+  }
+
+  return {
+    title: `${book.title} - 观后感`,
+    description: `关于《${book.title}》的阅读心得和感想`
+  }
+}
+
 export default function BookReviewPage({ params }: BookReviewPageProps) {
   const { slug } = params
   const book = books.find((b) => b.slug === slug)
